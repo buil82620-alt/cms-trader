@@ -8,5 +8,13 @@ export default defineConfig({
   output: 'server',
   adapter: netlify(),
   integrations: [react(), tailwind()],
+  vite: {
+    ssr: {
+      noExternal: ['@prisma/client', '@prisma/adapter-pg', 'pg'],
+    },
+    optimizeDeps: {
+      exclude: ['@prisma/client'],
+    },
+  },
 });
 
