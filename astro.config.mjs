@@ -10,21 +10,25 @@ export default defineConfig({
   integrations: [react(), tailwind()],
   vite: {
     ssr: {
-      noExternal: ['@prisma/client', '@prisma/adapter-pg', 'pg', 'socket.io-client'],
+      // Externalize Prisma in dev mode to avoid CommonJS/ESM issues
+      // Bundle it in production for Netlify Functions
+      noExternal: process.env.NODE_ENV === 'production' 
+        ? ['@prisma/client', '@prisma/adapter-pg', 'pg', 'socket.io-client']
+        : ['socket.io-client'],
     },
     optimizeDeps: {
-      exclude: ['@prisma/client'],
+      exclude: ['@prisma/client', '@prisma/adapter-pg', 'pg'],
     },
     resolve: {
-      alias: {
-        '.prisma/client/default': '@prisma/client',
-        '.prisma/client': '@prisma/client',
-      },
+      alias: {},
     },
     build: {
-      rollupOptions: {
-        external: [],
+      commonjsOptions: {
+        transformMixedEsModules: true,
       },
+      rollupOptions: process.env.NODE_ENV === 'production' 
+        ? { external: [] }
+        : { external: ['@prisma/client', '@prisma/adapter-pg', 'pg'] },
     },
   },
 });

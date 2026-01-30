@@ -1,3 +1,4 @@
+// Import PrismaClient with proper ESM handling
 import { PrismaClient } from '@prisma/client';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
@@ -34,4 +35,3 @@ export const prisma =
 if (process.env.NODE_ENV !== 'production') {
   global.prisma = prisma;
 }
-
