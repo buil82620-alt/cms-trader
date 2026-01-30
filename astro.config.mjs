@@ -1,19 +1,21 @@
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import tailwind from '@astrojs/tailwind';
-import netlify from '@astrojs/netlify';
+import node from '@astrojs/node';
 
 // https://astro.build/config
 export default defineConfig({
   output: 'server',
-  adapter: netlify(),
+  adapter: node({
+    mode: 'standalone',
+  }),
   integrations: [react(), tailwind()],
   vite: {
     ssr: {
       // Externalize Prisma in dev mode to avoid CommonJS/ESM issues
-      // Bundle it in production for Netlify Functions
+      // In production (Docker), we can bundle or externalize
       noExternal: process.env.NODE_ENV === 'production' 
-        ? ['@prisma/client', '@prisma/adapter-pg', 'pg', 'socket.io-client']
+        ? ['socket.io-client']
         : ['socket.io-client'],
     },
     optimizeDeps: {
@@ -26,9 +28,9 @@ export default defineConfig({
       commonjsOptions: {
         transformMixedEsModules: true,
       },
-      rollupOptions: process.env.NODE_ENV === 'production' 
-        ? { external: [] }
-        : { external: ['@prisma/client', '@prisma/adapter-pg', 'pg'] },
+      rollupOptions: {
+        external: ['@prisma/client', '@prisma/adapter-pg', 'pg'],
+      },
     },
   },
 });
