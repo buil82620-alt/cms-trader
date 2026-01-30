@@ -2,14 +2,11 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy root package files (for Prisma)
+# Copy package files
 COPY package*.json ./
 COPY yarn.lock* ./
 
-# Copy CMS package files
-COPY cms/package*.json ./cms/
-
-# Install root dependencies (for Prisma CLI)
+# Install dependencies
 RUN yarn install --frozen-lockfile || npm install
 
 # Copy Prisma schema
@@ -18,12 +15,8 @@ COPY prisma ./prisma
 # Generate Prisma Client
 RUN npx prisma generate
 
-# Install CMS dependencies
-WORKDIR /app/cms
-RUN yarn install --frozen-lockfile || npm install
-
-# Copy CMS application files
-COPY cms/ .
+# Copy application files
+COPY . .
 
 # Build the application
 RUN npm run build
@@ -33,30 +26,24 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy root package.json for Prisma Client runtime
+# Copy package.json
 COPY package*.json ./
 COPY yarn.lock* ./
 
-# Install only Prisma Client runtime dependencies
+# Install production dependencies
 RUN yarn install --production --frozen-lockfile --ignore-scripts || npm ci --only=production --ignore-scripts
 
 # Copy Prisma schema and generated client from builder
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/prisma ./prisma/
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma/
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma/
 
-# Copy CMS package.json
-COPY cms/package*.json ./cms/
+# Copy built application
+COPY --from=builder /app/dist ./dist/
 
-# Install CMS production dependencies
-WORKDIR /app/cms
-RUN yarn install --production --frozen-lockfile || npm ci --only=production
-
-# Copy built CMS application
-COPY --from=builder /app/cms/dist ./dist
-
-# Copy public assets if any
-COPY --from=builder /app/cms/public ./public || true
+# Copy public assets (will fail silently if doesn't exist)
+RUN mkdir -p ./public
+COPY --from=builder /app/public ./public/
 
 # Expose port
 EXPOSE 4322

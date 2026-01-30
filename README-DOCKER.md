@@ -6,13 +6,7 @@
 
 ```bash
 cd cms
-docker build -f Dockerfile -t trader-cms:latest ..
-```
-
-Hoặc từ root directory:
-
-```bash
-docker build -f cms/Dockerfile -t trader-cms:latest .
+docker build -t trader-cms:latest .
 ```
 
 ### 2. Chạy với Docker

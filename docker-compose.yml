@@ -3,8 +3,8 @@ version: '3.8'
 services:
   cms:
     build:
-      context: ..
-      dockerfile: cms/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "4322:4322"
     environment:
