@@ -153,7 +153,25 @@ export default function ChatPage() {
   const loadConversations = async () => {
     try {
       const response = await fetch(`/api/chat/conversations?status=${statusFilter}`);
-      const data = await response.json();
+      
+      if (!response.ok) {
+        console.error('Failed to load conversations:', response.status);
+        return;
+      }
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('Expected JSON but got:', contentType);
+        return;
+      }
+      
+      const text = await response.text();
+      if (!text || text.trim().length === 0) {
+        console.error('Empty response body');
+        return;
+      }
+      
+      const data = JSON.parse(text);
       setConversations(data.data || []);
 
       const totalUnread = data.data.reduce((sum: number, conv: Conversation) => {
@@ -203,7 +221,25 @@ export default function ChatPage() {
   const loadMessages = async (conversationId: number) => {
     try {
       const response = await fetch(`/api/chat/messages?conversationId=${conversationId}&limit=50`);
-      const data = await response.json();
+      
+      if (!response.ok) {
+        console.error('Failed to load messages:', response.status);
+        return;
+      }
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('Expected JSON but got:', contentType);
+        return;
+      }
+      
+      const text = await response.text();
+      if (!text || text.trim().length === 0) {
+        console.error('Empty response body');
+        return;
+      }
+      
+      const data = JSON.parse(text);
       setMessages(data.data || []);
       scrollToBottom();
     } catch (error) {

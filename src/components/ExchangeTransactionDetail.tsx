@@ -14,7 +14,20 @@ export default function ExchangeTransactionDetail({ transactionId }: ExchangeTra
 
   useEffect(() => {
     fetch(`/api/exchange-transactions/${transactionId}`)
-      .then((res) => res.json())
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error(`Expected JSON but got ${contentType}`);
+        }
+        const text = await res.text();
+        if (!text || text.trim().length === 0) {
+          throw new Error('Empty response body');
+        }
+        return JSON.parse(text);
+      })
       .then((data) => {
         setTransaction(data.data);
         setLoading(false);
@@ -49,13 +62,31 @@ export default function ExchangeTransactionDetail({ transactionId }: ExchangeTra
         body: JSON.stringify(data),
       });
 
-      const result = await response.json();
-
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to update exchange transaction');
+        let errorMessage = 'Failed to update exchange transaction';
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } else {
+            const text = await response.text();
+            errorMessage = text || errorMessage;
+          }
+        } catch (e) {
+          console.error('Error parsing error response:', e);
+        }
+        throw new Error(errorMessage);
       }
 
-      setTransaction(result.data);
+      const contentType = response.headers.get('content-type');
+      const result = contentType && contentType.includes('application/json')
+        ? JSON.parse(await response.text())
+        : { data: null };
+      
+      if (result.data) {
+        setTransaction(result.data);
+      }
       setSuccess(true);
       setIsEditing(false);
       setTimeout(() => setSuccess(false), 3000);

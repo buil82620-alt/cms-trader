@@ -14,7 +14,20 @@ export default function WithdrawalRequestDetail({ requestId }: WithdrawalRequest
 
   useEffect(() => {
     fetch(`/api/withdrawal-requests/${requestId}`)
-      .then((res) => res.json())
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error(`Expected JSON but got ${contentType}`);
+        }
+        const text = await res.text();
+        if (!text || text.trim().length === 0) {
+          throw new Error('Empty response body');
+        }
+        return JSON.parse(text);
+      })
       .then((data) => {
         setRequest(data.data);
         setLoading(false);

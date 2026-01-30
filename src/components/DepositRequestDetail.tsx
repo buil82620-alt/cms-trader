@@ -51,11 +51,36 @@ export default function DepositRequestDetail({ id: propId }: DepositRequestDetai
       try {
         setLoading(true);
         const response = await fetch(`/api/deposit-requests/${id}`);
-        const data = await response.json();
-
+        
         if (!response.ok) {
-          throw new Error(data.error || 'Failed to fetch request');
+          let errorMessage = `HTTP ${response.status}`;
+          try {
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              const errorData = await response.json();
+              errorMessage = errorData.error || errorMessage;
+            } else {
+              const text = await response.text();
+              errorMessage = text || errorMessage;
+            }
+          } catch (e) {
+            console.error('Error parsing error response:', e);
+          }
+          throw new Error(errorMessage);
         }
+        
+        // Safe JSON parsing
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error(`Expected JSON but got ${contentType}`);
+        }
+        
+        const text = await response.text();
+        if (!text || text.trim().length === 0) {
+          throw new Error('Empty response body');
+        }
+        
+        const data = JSON.parse(text);
         setRequest(data.data);
       } catch (err: any) {
         setError(err.message);
@@ -93,16 +118,48 @@ export default function DepositRequestDetail({ id: propId }: DepositRequestDetai
         }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || `Failed to ${action} request`);
+        let errorMessage = `Failed to ${action} request`;
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } else {
+            const text = await response.text();
+            errorMessage = text || errorMessage;
+          }
+        } catch (e) {
+          console.error('Error parsing error response:', e);
+        }
+        throw new Error(errorMessage);
+      }
+
+      // Parse response if it has content
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const text = await response.text();
+        if (text && text.trim().length > 0) {
+          const data = JSON.parse(text);
+          // Handle success response if needed
+        }
       }
 
       alert(`Request ${action}d successfully!`);
       // Reload request data
       const reloadResponse = await fetch(`/api/deposit-requests/${id}`);
-      const reloadData = await reloadResponse.json();
+      if (!reloadResponse.ok) {
+        throw new Error(`HTTP ${reloadResponse.status}`);
+      }
+      const reloadContentType = reloadResponse.headers.get('content-type');
+      if (!reloadContentType || !reloadContentType.includes('application/json')) {
+        throw new Error(`Expected JSON but got ${reloadContentType}`);
+      }
+      const reloadText = await reloadResponse.text();
+      if (!reloadText || reloadText.trim().length === 0) {
+        throw new Error('Empty response body');
+      }
+      const reloadData = JSON.parse(reloadText);
       if (reloadResponse.ok) {
         setRequest(reloadData.data);
       }

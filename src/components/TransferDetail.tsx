@@ -14,7 +14,20 @@ export default function TransferDetail({ transferId }: TransferDetailProps) {
 
   useEffect(() => {
     fetch(`/api/transfers/${transferId}`)
-      .then((res) => res.json())
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error(`Expected JSON but got ${contentType}`);
+        }
+        const text = await res.text();
+        if (!text || text.trim().length === 0) {
+          throw new Error('Empty response body');
+        }
+        return JSON.parse(text);
+      })
       .then((data) => {
         setTransfer(data.data);
         setLoading(false);

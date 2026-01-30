@@ -19,12 +19,28 @@ export default function Dashboard() {
           fetch('/api/dashboard/top-assets'),
         ]);
 
+        // Helper function for safe JSON parsing
+        const parseJson = async (res: Response) => {
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+          }
+          const contentType = res.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            throw new Error(`Expected JSON but got ${contentType}`);
+          }
+          const text = await res.text();
+          if (!text || text.trim().length === 0) {
+            throw new Error('Empty response body');
+          }
+          return JSON.parse(text);
+        };
+
         const [statsData, activitiesData, growthData, volumeData, assetsData] = await Promise.all([
-          statsRes.json(),
-          activitiesRes.json(),
-          growthRes.json(),
-          volumeRes.json(),
-          assetsRes.json(),
+          parseJson(statsRes),
+          parseJson(activitiesRes),
+          parseJson(growthRes),
+          parseJson(volumeRes),
+          parseJson(assetsRes),
         ]);
 
         setStats(statsData.data);

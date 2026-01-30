@@ -62,15 +62,46 @@ export default function DataTable({ columns, apiUrl, title, onRowClick, createUr
         const response = await fetch(url);
         
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-          console.error('API error:', response.status, errorData);
+          let errorMessage = `HTTP ${response.status}`;
+          try {
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              const errorData = await response.json();
+              errorMessage = errorData.error || errorMessage;
+            } else {
+              const text = await response.text();
+              errorMessage = text || errorMessage;
+            }
+          } catch (e) {
+            console.error('Error parsing error response:', e);
+          }
+          console.error('API error:', response.status, errorMessage);
           setData([]);
           setTotalPages(0);
           setTotal(0);
           return;
         }
         
-        const result = await response.json();
+        // Check if response has content
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          console.error('Expected JSON but got:', contentType);
+          setData([]);
+          setTotalPages(0);
+          setTotal(0);
+          return;
+        }
+        
+        const text = await response.text();
+        if (!text || text.trim().length === 0) {
+          console.error('Empty response body');
+          setData([]);
+          setTotalPages(0);
+          setTotal(0);
+          return;
+        }
+        
+        const result = JSON.parse(text);
         console.log('API response:', result);
         
         setData(result.data || []);

@@ -41,7 +41,22 @@ export default function VerificationRequestDetail() {
     const loadRequest = async () => {
       try {
         const response = await fetch(`/api/verification-requests/${id}`);
-        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error(`Expected JSON but got ${contentType}`);
+        }
+        
+        const text = await response.text();
+        if (!text || text.trim().length === 0) {
+          throw new Error('Empty response body');
+        }
+        
+        const data = JSON.parse(text);
         setRequest(data.data);
       } catch (error) {
         console.error('Error loading verification request:', error);
@@ -64,10 +79,30 @@ export default function VerificationRequestDetail() {
         method: 'POST',
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to approve request');
+        let errorMessage = 'Failed to approve request';
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } else {
+            const text = await response.text();
+            errorMessage = text || errorMessage;
+          }
+        } catch (e) {
+          console.error('Error parsing error response:', e);
+        }
+        throw new Error(errorMessage);
+      }
+      
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const text = await response.text();
+        if (text && text.trim().length > 0) {
+          const data = JSON.parse(text);
+          // Handle success response if needed
+        }
       }
 
       alert('Verification request approved successfully!');
@@ -95,7 +130,31 @@ export default function VerificationRequestDetail() {
         body: JSON.stringify({ rejectReason }),
       });
 
-      const data = await response.json();
+      if (!response.ok) {
+        let errorMessage = 'Failed to reject request';
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } else {
+            const text = await response.text();
+            errorMessage = text || errorMessage;
+          }
+        } catch (e) {
+          console.error('Error parsing error response:', e);
+        }
+        throw new Error(errorMessage);
+      }
+      
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const text = await response.text();
+        if (text && text.trim().length > 0) {
+          const data = JSON.parse(text);
+          // Handle success response if needed
+        }
+      }
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to reject request');

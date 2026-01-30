@@ -28,9 +28,25 @@ export default function UserDetail({ userId }: UserDetailProps) {
         fetch(`/api/users/${userId}/statistics`),
       ]);
 
+      // Safe JSON parsing
+      const parseJson = async (res: Response) => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error(`Expected JSON but got ${contentType}`);
+        }
+        const text = await res.text();
+        if (!text || text.trim().length === 0) {
+          throw new Error('Empty response body');
+        }
+        return JSON.parse(text);
+      };
+
       const [userData, statsData] = await Promise.all([
-        userRes.json(),
-        statsRes.json(),
+        parseJson(userRes),
+        parseJson(statsRes),
       ]);
 
       setUser(userData.data);
@@ -50,15 +66,30 @@ export default function UserDetail({ userId }: UserDetailProps) {
         body: JSON.stringify({ reason: banReason }),
       });
 
-      const result = await response.json();
-      if (response.ok) {
-        setMessage({ type: 'success', text: result.message });
-        setShowBanModal(false);
-        setBanReason('');
-        loadUserData();
-      } else {
-        setMessage({ type: 'error', text: result.error });
+      if (!response.ok) {
+        let errorMessage = 'Failed to ban user';
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          }
+        } catch (e) {
+          // Ignore
+        }
+        setMessage({ type: 'error', text: errorMessage });
+        return;
       }
+
+      const contentType = response.headers.get('content-type');
+      const result = contentType && contentType.includes('application/json')
+        ? JSON.parse(await response.text())
+        : { message: 'User banned successfully' };
+      
+      setMessage({ type: 'success', text: result.message });
+      setShowBanModal(false);
+      setBanReason('');
+      loadUserData();
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message });
     }
@@ -70,13 +101,28 @@ export default function UserDetail({ userId }: UserDetailProps) {
         method: 'POST',
       });
 
-      const result = await response.json();
-      if (response.ok) {
-        setMessage({ type: 'success', text: result.message });
-        loadUserData();
-      } else {
-        setMessage({ type: 'error', text: result.error });
+      if (!response.ok) {
+        let errorMessage = 'Failed to unban user';
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          }
+        } catch (e) {
+          // Ignore
+        }
+        setMessage({ type: 'error', text: errorMessage });
+        return;
       }
+
+      const contentType = response.headers.get('content-type');
+      const result = contentType && contentType.includes('application/json')
+        ? JSON.parse(await response.text())
+        : { message: 'User unbanned successfully' };
+      
+      setMessage({ type: 'success', text: result.message });
+      loadUserData();
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message });
     }
@@ -88,13 +134,28 @@ export default function UserDetail({ userId }: UserDetailProps) {
         method: 'POST',
       });
 
-      const result = await response.json();
-      if (response.ok) {
-        setMessage({ type: 'success', text: result.message });
-        loadUserData();
-      } else {
-        setMessage({ type: 'error', text: result.error });
+      if (!response.ok) {
+        let errorMessage = 'Failed to toggle user status';
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          }
+        } catch (e) {
+          // Ignore
+        }
+        setMessage({ type: 'error', text: errorMessage });
+        return;
       }
+
+      const contentType = response.headers.get('content-type');
+      const result = contentType && contentType.includes('application/json')
+        ? JSON.parse(await response.text())
+        : { message: 'User status updated successfully' };
+      
+      setMessage({ type: 'success', text: result.message });
+      loadUserData();
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message });
     }
@@ -113,14 +174,29 @@ export default function UserDetail({ userId }: UserDetailProps) {
         body: JSON.stringify({ newPassword }),
       });
 
-      const result = await response.json();
-      if (response.ok) {
-        setMessage({ type: 'success', text: result.message });
-        setShowPasswordModal(false);
-        setNewPassword('');
-      } else {
-        setMessage({ type: 'error', text: result.error });
+      if (!response.ok) {
+        let errorMessage = 'Failed to reset password';
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          }
+        } catch (e) {
+          // Ignore
+        }
+        setMessage({ type: 'error', text: errorMessage });
+        return;
       }
+
+      const contentType = response.headers.get('content-type');
+      const result = contentType && contentType.includes('application/json')
+        ? JSON.parse(await response.text())
+        : { message: 'Password reset successfully' };
+      
+      setMessage({ type: 'success', text: result.message });
+      setShowPasswordModal(false);
+      setNewPassword('');
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message });
     }
@@ -139,15 +215,30 @@ export default function UserDetail({ userId }: UserDetailProps) {
         body: JSON.stringify(balanceForm),
       });
 
-      const result = await response.json();
-      if (response.ok) {
-        setMessage({ type: 'success', text: result.message });
-        setShowBalanceModal(false);
-        setBalanceForm({ asset: 'USDT', amount: '', type: 'add', reason: '' });
-        loadUserData();
-      } else {
-        setMessage({ type: 'error', text: result.error });
+      if (!response.ok) {
+        let errorMessage = 'Failed to adjust balance';
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          }
+        } catch (e) {
+          // Ignore
+        }
+        setMessage({ type: 'error', text: errorMessage });
+        return;
       }
+
+      const contentType = response.headers.get('content-type');
+      const result = contentType && contentType.includes('application/json')
+        ? JSON.parse(await response.text())
+        : { message: 'Balance adjusted successfully' };
+      
+      setMessage({ type: 'success', text: result.message });
+      setShowBalanceModal(false);
+      setBalanceForm({ asset: 'USDT', amount: '', type: 'add', reason: '' });
+      loadUserData();
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message });
     }
